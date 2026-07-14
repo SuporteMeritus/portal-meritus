@@ -503,7 +503,7 @@ document.getElementById('modal-det').addEventListener('click',function(e){if(e.t
 function abrirDel(id){ deletandoId=id; document.getElementById('modal-del').classList.add('open'); }
 function fecharDel(){ document.getElementById('modal-del').classList.remove('open'); deletandoId=null; }
 document.getElementById('modal-del').addEventListener('click',function(e){if(e.target===this)fecharDel();});
-function confirmarDel(){ dados=dados.filter(function(x){return x.id!==deletandoId;}); salvarLocal(); fecharDel(); render(); }
+async function confirmarDel(){ await deletarFirestore(deletandoId); fecharDel(); deletandoId=null; }
 
 // ── FILTROS ───────────────────────────────────────────────────────────────
 function limparMes(){ document.getElementById('filtro-mes').value=''; filtroMes=''; render(); }
@@ -523,16 +523,17 @@ function exportarDados(){
 function importarDados(event){
   var file=event.target.files[0]; if(!file) return;
   var reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try{
       var json=JSON.parse(e.target.result);
       var novos=json.dados||json;
       if(!Array.isArray(novos)) throw new Error();
       var ids=new Set(dados.map(function(d){return d.id;}));
       var add=0;
-      novos.forEach(function(d){if(!ids.has(d.id)){dados.push(d);add++;}});
-      salvarLocal(); render();
-      alert(add+' registro(s) importado(s)!');
+      for(var i=0;i<novos.length;i++){
+        if(!ids.has(novos[i].id)){ await salvarFirestore(novos[i]); add++; }
+      }
+      alert(add+' registro(s) importado(s) com sucesso!');
     }catch(e){ alert('Arquivo inválido.'); }
     event.target.value='';
   };
