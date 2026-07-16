@@ -71,7 +71,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .metric-lbl{font-size:12px;color:#6b7280;margin-top:3px}
 
 /* TIMES */
-.times-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:1.5rem}
+.times-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem;overflow-x:auto}
 .time-card{background:#fff;border:1px solid #e5e7ef;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .time-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
 .time-name{font-size:14px;font-weight:700}
@@ -102,6 +102,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-icon.edit:hover{background:#ede9fe;color:#6366f1;border-color:#6366f1}
 .btn-icon.del:hover{background:#fee2e2;color:#e34948;border-color:#e34948}
 .tag-edit{font-size:10px;padding:1px 5px;border-radius:20px;background:#ede9fe;color:#6366f1;margin-left:4px}
+.b-concluido{background:#d1fae5;color:#059669}
+.b-sem-interesse{background:#fee2e2;color:#e34948}
+.b-aguardando{background:#fef3c7;color:#d97706}
 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:center;justify-content:center;overflow-y:auto;padding:20px}
@@ -227,6 +230,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="field"><label>Nome do agente</label><input type="text" id="f-agente" placeholder="Ex: Maria Silva"/></div>
     </div>
     <div class="section-lbl">Feedback</div>
+    <div class="field-row">
+      <div class="field"><label>Status</label>
+        <select id="f-status">
+          <option value="Aguardando Feedback">Aguardando Feedback</option>
+          <option value="Concluído">Concluído</option>
+          <option value="Sem Interesse">Sem Interesse</option>
+        </select>
+      </div>
+      <div class="field"><label>&nbsp;</label></div>
+    </div>
     <div class="field"><label>Feedback / Observações</label><textarea id="f-feedback" placeholder="Descreva o que aconteceu..."></textarea></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
@@ -330,13 +343,26 @@ function aguardarFB(fn){if(window._fbReady)fn();else window.addEventListener('fb
 
 function iniciarListeners(){
   aguardarFB(function(){
-    var unsub=window._onSnapshot(window._col(window._db,'tentativas'),function(snap){
-      dados=[];
-      snap.forEach(function(d){dados.push(Object.assign({id:d.id},d.data()));});
-      dados.sort(function(a,b){return(a.ts||0)-(b.ts||0);});
-      render();setSyncStatus('ok');
-    },function(){setSyncStatus('err');});
-    window._tentUnsub=unsub;
+    try{
+      var unsub=window._onSnapshot(window._col(window._db,'tentativas'),function(snap){
+        dados=[];
+        snap.forEach(function(d){
+          var item=d.data();
+          item.id=item.id||d.id;
+          dados.push(item);
+        });
+        dados.sort(function(a,b){return(a.ts||0)-(b.ts||0);});
+        render();
+        setSyncStatus('ok');
+      },function(err){
+        console.error('Listener error:',err);
+        setSyncStatus('err');
+      });
+      window._tentUnsub=unsub;
+    }catch(e){
+      console.error('iniciarListeners error:',e);
+      setSyncStatus('err');
+    }
   });
 }
 
@@ -394,13 +420,14 @@ function abrirModal(id){
     document.getElementById('f-marca-modal').value=d.marca||listas.marcas[0];
     document.getElementById('f-equipe-modal').value=d.equipe||'Titanium';
     document.getElementById('f-agente').value=d.agente||'';
+    document.getElementById('f-status').value=d.status||'Aguardando Feedback';
     document.getElementById('f-feedback').value=d.feedback||'';
   } else {
     document.getElementById('modal-title').textContent='Novo registro';
     document.getElementById('btn-salvar').textContent='Salvar';
     document.getElementById('f-nome').value='';document.getElementById('f-email').value='';
     document.getElementById('f-valor').value='';document.getElementById('f-data').value=hoje();
-    document.getElementById('f-agente').value='';document.getElementById('f-feedback').value='';
+    document.getElementById('f-agente').value='';document.getElementById('f-status').value='Aguardando Feedback';document.getElementById('f-feedback').value='';
   }
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){document.getElementById('f-nome').focus();},100);
@@ -457,7 +484,7 @@ function abrirDet(id){
     '<div style="display:flex;flex-direction:column;gap:10px;font-size:14px">'+
     row('Cliente',d.nome,true)+row('E-mail',d.email)+row('Valor','<span style="font-weight:700;color:#6366f1">'+fmt(d.valor)+'</span>')+
     row('Data',formatarData(d.data))+row('Provedor',d.provedor)+row('Marca',d.marca)+
-    row('Equipe',d.equipe)+row('Agente',d.agente)+
+    row('Equipe',d.equipe)+row('Agente',d.agente)+row('Status',d.status||'Aguardando Feedback')+
     (d.feedback?'<div style="border-top:1px solid #e5e7ef;padding-top:10px"><div style="color:#6b7280;font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Feedback</div><div style="line-height:1.6;color:#1a1d2e">'+d.feedback+'</div></div>':'')+
     '</div>';
   document.getElementById('modal-det').classList.add('open');
@@ -512,15 +539,19 @@ function render(){
   document.getElementById('m-valor').textContent=fmt(valorTotal);
   document.getElementById('total-geral').textContent=total+' registro'+(total!==1?'s':'')+' · '+fmt(valorTotal);
 
+  document.getElementById('m-concluido').textContent=lista.filter(function(d){return d.status==='Concluído';}).length;
+  document.getElementById('m-sem-interesse').textContent=lista.filter(function(d){return d.status==='Sem Interesse';}).length;
+  document.getElementById('m-aguardando').textContent=lista.filter(function(d){return !d.status||d.status==='Aguardando Feedback';}).length;
+
   TIMES.forEach(function(t){
     var el=document.getElementById('m-'+t.nome.toLowerCase());
-    if(el)el.textContent=lista.filter(function(d){return d.equipe===t.nome;}).length;
+    if(el)el.textContent=lista.filter(function(d){return (d.equipe||d.agente)===t.nome;}).length;
   });
 
   // Render times grid
   var grid=document.getElementById('times-grid');
   grid.innerHTML=TIMES.map(function(t){
-    var registros=[...lista].filter(function(d){return d.equipe===t.nome;}).reverse();
+    var registros=[...lista].filter(function(d){return (d.equipe||d.agente)===t.nome;}).reverse();
     var totalTime=registros.reduce(function(s,d){return s+parseFloat(d.valor||0);},0);
     return '<div class="time-card">'+
       '<div class="time-header" style="background:'+t.bg+';border-bottom:2px solid '+t.cor+'20">'+
@@ -560,8 +591,8 @@ function render(){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────
-document.getElementById('filtro-mes').value=mesAtual();
-filtroMes=mesAtual();
+document.getElementById('filtro-mes').value='';
+filtroMes='';
 carregarListas();
 
 (function(){
