@@ -523,6 +523,8 @@ async function salvar(){
     }
     await salvarFS(item);
     fecharModal();
+    btn.textContent=editandoId!==null?'Salvar alterações':'Salvar';
+    btn.disabled=false;
   } catch(err){
     alert('Erro ao salvar: '+err.message);
     btn.textContent=editandoId!==null?'Salvar alterações':'Salvar';
@@ -548,7 +550,14 @@ document.getElementById('modal-det').addEventListener('click',function(e){if(e.t
 function abrirDel(id){deletandoId=id;document.getElementById('modal-del').classList.add('open');}
 function fecharDel(){document.getElementById('modal-del').classList.remove('open');deletandoId=null;}
 document.getElementById('modal-del').addEventListener('click',function(e){if(e.target===this)fecharDel();});
-async function confirmarDel(){await deletarFS(deletandoId);fecharDel();}
+async function confirmarDel(){
+  try{
+    await deletarFS(deletandoId);
+  }catch(err){
+    alert('Erro ao remover: '+err.message);
+  }
+  fecharDel();
+}
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
 function fmt(v){return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
