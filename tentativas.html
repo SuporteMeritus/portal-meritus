@@ -191,6 +191,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="metric" id="mc-mandacaru"><div class="metric-val" style="color:#059669" id="m-mandacaru">0</div><div class="metric-lbl">Mandacaru</div></div>
     <div class="metric" id="mc-supremacia"><div class="metric-val" style="color:#d97706" id="m-supremacia">0</div><div class="metric-lbl">Supremacia</div></div>
     <div class="metric" id="mc-vertex"><div class="metric-val" style="color:#7c3aed" id="m-vertex">0</div><div class="metric-lbl">Vertex</div></div>
+    <div class="metric"><div class="metric-val" style="color:#059669" id="m-concluido">0</div><div class="metric-lbl">Concluídos</div></div>
+    <div class="metric"><div class="metric-val" style="color:#e34948" id="m-sem-interesse">0</div><div class="metric-lbl">Sem Interesse</div></div>
+    <div class="metric"><div class="metric-val" style="color:#d97706" id="m-aguardando">0</div><div class="metric-lbl">Aguardando</div></div>
   </div>
 
   <!-- TIMES -->
@@ -453,6 +456,7 @@ async function salvar(){
         marca:document.getElementById('f-marca-modal').value,
         equipe:document.getElementById('f-equipe-modal').value,
         agente:document.getElementById('f-agente').value.trim(),
+        status:document.getElementById('f-status').value,
         feedback:document.getElementById('f-feedback').value.trim(),
         editado:true,editadoPor:reg
       });
@@ -465,6 +469,7 @@ async function salvar(){
         marca:document.getElementById('f-marca-modal').value,
         equipe:document.getElementById('f-equipe-modal').value,
         agente:document.getElementById('f-agente').value.trim(),
+        status:document.getElementById('f-status').value,
         feedback:document.getElementById('f-feedback').value.trim(),
         editado:false,registradoPor:reg,ts:Date.now(),criadoEm:new Date().toLocaleString('pt-BR')
       };
