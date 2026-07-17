@@ -480,6 +480,14 @@ async function salvarFS(item){
   await window._setDoc(window._doc(window._db,'tentativas',item.id.toString()),item);
 }
 async function deletarFS(id){await window._deleteDoc(window._doc(window._db,'tentativas',id.toString()));}
+async function salvarFSUpsell(item){
+  if(!window._db||!window._setDoc) throw new Error('Firebase não inicializado');
+  await window._setDoc(window._doc(window._db,'upsell',item.id.toString()),item);
+}
+async function deletarFSUpsell(id){
+  if(!window._db||!window._deleteDoc) throw new Error('Firebase não inicializado');
+  await window._deleteDoc(window._doc(window._db,'upsell',id.toString()));
+}
 
 // ── SELECTS ───────────────────────────────────────────────────────────────
 function preencherSelects(){
